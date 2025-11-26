@@ -16,7 +16,7 @@ beforeEach(() => poolStub.resetHistory());
 after(()      => sinon.restore());
 
 // Route: GET /api/v1/users
-describe('GET /api/v1/users', () => {
+describe('stub pool GET /api/v1/users', () => {
   it('returns all users when database query succeeds', async () => {
     const mockUsers = [{ id: 1, username: 'john', email: 'j@d.com', points: 50 }];
     poolStub.resolves([mockUsers]);

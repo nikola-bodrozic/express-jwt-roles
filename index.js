@@ -4,9 +4,9 @@ const pool = require("./config/db");
 const cors = require("cors");
 const port = 3000;
 const dotenv = require("dotenv");
-const { sortUsers } = require('./services/userService');
+const userService = require('./services/userService');
 
-dotenv.config();
+dotenv.config({ quiet: true });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
@@ -28,7 +28,7 @@ app.get(`${apiUrl}/users`, async (req, res) => {
 app.get(`${apiUrl}/sortedusers`, async (req, res) => {
   const sc = req.query.order?.toUpperCase() === "ASC" ? "ASC" : "DESC";
   try {
-    const su = await sortUsers(sc);
+    const su = await userService.sortUsers(sc);
     res.json(su);
   } catch (err) {
     console.error("Database error:", err);
