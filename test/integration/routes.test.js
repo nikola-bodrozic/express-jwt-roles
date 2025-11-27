@@ -36,7 +36,13 @@ describe('GET /api/v1/users', () => {
   });
 
   it('returns all users when valid token provided', async () => {
-    const mockUsers = [{ id: 1, username: 'john', email: 'j@d.com', points: 50 }];
+    const mockUsers = [{ 
+      id: 1, 
+      username: 'john', 
+      email: 'j@d.com', 
+      points: 50,
+      role: 'user'  // Include role in mock data
+    }];
     poolStub.resolves([mockUsers]);
 
     const res = await request
@@ -45,15 +51,16 @@ describe('GET /api/v1/users', () => {
       .expect(200);
 
     expect(res.body).to.deep.equal(mockUsers);
-    expect(poolStub).to.have.been.calledOnceWithExactly('SELECT id, username, email, points FROM users');
+    // Update the expected SQL to include the role field
+    expect(poolStub).to.have.been.calledOnceWithExactly('SELECT id, username, email, points, role FROM users');
   });
 });
 
 // Route: GET /api/v1/sortedusers
 describe('GET /api/v1/sortedusers', () => {
   const mockDesc = [
-    { id: 3, username: 'zebra', email: 'z@e.com', points: 999 },
-    { id: 1, username: 'alice', email: 'a@b.com', points: 100 }
+    { id: 3, username: 'zebra', email: 'z@e.com', points: 999, role: 'user' },
+    { id: 1, username: 'alice', email: 'a@b.com', points: 100, role: 'user' }
   ];
   const mockAsc = mockDesc.slice().reverse();
 
