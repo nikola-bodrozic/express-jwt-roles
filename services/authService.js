@@ -2,7 +2,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const pool = require('../config/db');
-const { JWT_SECRET } = require('../middleware/auth');
+const { JWT_SECRET, JWT_EXPIRES_IN } = require('../middleware/auth');
 
 async function loginUser(email, password) {
   try {
@@ -18,18 +18,14 @@ async function loginUser(email, password) {
 
     const user = users[0];
 
-    // In a real application, you should hash passwords and compare here
-    // For now, we'll assume plain text comparison or add password hashing later
-    // const validPassword = await bcrypt.compare(password, user.password);
-    // For this example, let's add a temporary password field or use existing points as demo
+    // Verify password using bcrypt (now using actual password hashing)
+    const validPassword = await bcrypt.compare(password, user.password);
     
-    // Since we don't have password field, let's create a simple demo
-    // In production, you should add proper password hashing
-    if (password !== 'demo123') { // Temporary for demo - replace with proper auth
+    if (!validPassword) {
       throw new Error('Invalid credentials');
     }
 
-    // Create JWT token
+    // Create JWT token with environment variable expiration
     const token = jwt.sign(
       { 
         id: user.id, 
@@ -37,7 +33,7 @@ async function loginUser(email, password) {
         email: user.email 
       },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: JWT_EXPIRES_IN }
     );
 
     return {
@@ -72,10 +68,10 @@ async function registerUser(username, email, password) {
     // Insert new user
     const [result] = await pool.execute(
       'INSERT INTO users (username, email, password, points) VALUES (?, ?, ?, ?)',
-      [username, email, hashedPassword, 0] // Start with 0 points
+      [username, email, hashedPassword, 0]
     );
 
-    // Generate token for new user
+    // Generate token for new user with environment variable expiration
     const token = jwt.sign(
       { 
         id: result.insertId, 
@@ -83,7 +79,7 @@ async function registerUser(username, email, password) {
         email: email 
       },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: JWT_EXPIRES_IN }
     );
 
     return {

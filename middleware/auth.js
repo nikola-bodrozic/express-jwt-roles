@@ -2,6 +2,7 @@
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -20,4 +21,4 @@ function authenticateToken(req, res, next) {
   });
 }
 
-module.exports = { authenticateToken, JWT_SECRET };
+module.exports = { authenticateToken, JWT_SECRET, JWT_EXPIRES_IN };
