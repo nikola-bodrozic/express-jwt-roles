@@ -18,19 +18,20 @@ async function loginUser(email, password) {
 
     const user = users[0];
 
-    // Verify password using bcrypt (now using actual password hashing)
+    // Verify password using bcrypt
     const validPassword = await bcrypt.compare(password, user.password);
     
     if (!validPassword) {
       throw new Error('Invalid credentials');
     }
 
-    // Create JWT token with environment variable expiration
+    // Create JWT token with role included
     const token = jwt.sign(
       { 
         id: user.id, 
         username: user.username, 
-        email: user.email 
+        email: user.email,
+        role: user.role || 'user'  // Include role in token
       },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
@@ -42,7 +43,8 @@ async function loginUser(email, password) {
         id: user.id,
         username: user.username,
         email: user.email,
-        points: user.points
+        points: user.points,
+        role: user.role || 'user'
       }
     };
   } catch (error) {
@@ -50,7 +52,7 @@ async function loginUser(email, password) {
   }
 }
 
-async function registerUser(username, email, password) {
+async function registerUser(username, email, password, role = 'user') {
   try {
     // Check if user already exists
     const [existingUsers] = await pool.execute(
@@ -65,18 +67,19 @@ async function registerUser(username, email, password) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert new user
+    // Insert new user with role
     const [result] = await pool.execute(
-      'INSERT INTO users (username, email, password, points) VALUES (?, ?, ?, ?)',
-      [username, email, hashedPassword, 0]
+      'INSERT INTO users (username, email, password, points, role) VALUES (?, ?, ?, ?, ?)',
+      [username, email, hashedPassword, 0, role]
     );
 
-    // Generate token for new user with environment variable expiration
+    // Generate token for new user with role
     const token = jwt.sign(
       { 
         id: result.insertId, 
         username: username, 
-        email: email 
+        email: email,
+        role: role
       },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
@@ -88,7 +91,8 @@ async function registerUser(username, email, password) {
         id: result.insertId,
         username,
         email,
-        points: 0
+        points: 0,
+        role: role
       }
     };
   } catch (error) {

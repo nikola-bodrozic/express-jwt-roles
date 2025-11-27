@@ -3,7 +3,7 @@ const pool = require('../config/db');
 
 async function sortUsers(order = 'DESC') {
   const [rows] = await pool.execute(
-    'SELECT id, username, email, points FROM users ORDER BY points ' + order
+    'SELECT id, username, email, points, role FROM users ORDER BY points ' + order
   );
   return rows;
 }

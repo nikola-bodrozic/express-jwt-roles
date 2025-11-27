@@ -6,6 +6,7 @@ const port = 3000;
 const dotenv = require("dotenv");
 const userService = require('./services/userService');
 const { authenticateToken } = require('./middleware/auth');
+const { requireAdmin } = require('./middleware/adminAuth');
 const { loginUser, registerUser } = require('./services/authService');
 
 dotenv.config({ quiet: true });
@@ -18,8 +19,12 @@ const apiUrl = "/api/v1";
 // Public routes
 app.post(`${apiUrl}/register`, async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-    const result = await registerUser(username, email, password);
+    const { username, email, password, role = 'user' } = req.body;
+    
+    // Prevent non-admins from registering as admin
+    const finalRole = (role === 'admin') ? 'user' : role;
+    
+    const result = await registerUser(username, email, password, finalRole);
     res.json(result);
   } catch (error) {
     console.error('Registration error:', error);
@@ -38,9 +43,9 @@ app.post(`${apiUrl}/login`, async (req, res) => {
   }
 });
 
-// Protected routes - require JWT token
+// Protected user routes
 app.get(`${apiUrl}/users`, authenticateToken, async (req, res) => {
-  const sqlQuery = "SELECT id, username, email, points FROM users";
+  const sqlQuery = "SELECT id, username, email, points, role FROM users";
   try {
     const [rows] = await pool.execute(sqlQuery);
     res.json(rows);
@@ -58,6 +63,56 @@ app.get(`${apiUrl}/sortedusers`, authenticateToken, async (req, res) => {
   } catch (err) {
     console.error("Database error:", err);
     res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+// Admin-only: Get all user details (including passwords for admin view)
+app.get(`${apiUrl}/admin/users`, authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.execute('SELECT * FROM users');
+    res.json(rows);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Database query error" });
+  }
+});
+
+// Admin: Delete user
+app.delete(`${apiUrl}/admin/users/:userId`, authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const [result] = await pool.execute('DELETE FROM users WHERE id = ?', [userId]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
+// Admin: Update user points
+app.put(`${apiUrl}/admin/users/:userId/points`, authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { points } = req.body;
+    
+    const [result] = await pool.execute(
+      'UPDATE users SET points = ? WHERE id = ?',
+      [points, userId]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ message: 'User points updated successfully' });
+  } catch (error) {
+    console.error('Update points error:', error);
+    res.status(500).json({ error: 'Failed to update points' });
   }
 });
 
