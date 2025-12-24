@@ -52,8 +52,9 @@ async function loginUser(email, password) {
   }
 }
 
-async function registerUser(username, email, password, role = 'user') {
+async function registerUser(username, email, password, role) {
   try {
+    
     // Check if user already exists
     const [existingUsers] = await pool.execute(
       'SELECT id FROM users WHERE email = ? OR username = ?',
