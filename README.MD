@@ -106,6 +106,17 @@ curl http://localhost:3000/api/v1/users \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
+#### Logout
+```bash
+curl http://localhost:3000/api/v1/logout \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+  # try again w same token
+ curl http://localhost:3000/api/v1/users  \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+  {"error":"Token has been invalidated"}
+``` 
+
 ### 👑 Admin Routes
 
 #### Get All Users (Admin View)
@@ -131,7 +142,7 @@ curl -X DELETE http://localhost:3000/api/v1/admin/users/8 \
 ## 🔐 Authentication
 
 ### JWT Token Flow
-1. **Register/Login** to receive JWT token
+1. **Register/Login/Logout** to receive JWT token
 2. **Include token** in request headers: `Authorization: Bearer <token>`
 3. **Access protected routes** based on user role
 
