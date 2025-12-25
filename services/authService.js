@@ -31,7 +31,7 @@ async function loginUser(email, password) {
         id: user.id, 
         username: user.username, 
         email: user.email,
-        role: user.role || 'user'  // Include role in token
+        role: user.role
       },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
@@ -44,7 +44,7 @@ async function loginUser(email, password) {
         username: user.username,
         email: user.email,
         points: user.points,
-        role: user.role || 'user'
+        role: user.role
       }
     };
   } catch (error) {
@@ -101,4 +101,24 @@ async function registerUser(username, email, password, role) {
   }
 }
 
-module.exports = { loginUser, registerUser };
+async function invalidateToken(token, userEmail) {
+  try {
+    // Log the invalidation attempt
+    console.log(`Invalidating token for user: ${userEmail}`);
+    
+    // Insert the token into the blacklist
+    const [result] = await pool.execute(
+      'INSERT INTO sw_tokens (token, user, is_invalidated) VALUES (?, ?, ?)',
+      [token, userEmail, 1]
+    );
+    
+    return {
+      message: "Token invalidated successfully",
+      result
+    };
+  } catch (error) {
+    throw new Error('Token invalidation failed: ' + error.message);
+  }
+}
+
+module.exports = { loginUser, registerUser, invalidateToken };

@@ -5,7 +5,7 @@ const cors = require("cors");
 const port = 3000;
 const dotenv = require("dotenv");
 const { authenticateToken } = require("./middleware/auth");
-const { loginUser, registerUser } = require("./services/authService");
+const { loginUser, registerUser, invalidateToken } = require("./services/authService");
 
 dotenv.config({ quiet: true });
 app.use(express.json());
@@ -59,6 +59,18 @@ app.post(`${apiUrl}/login`, async (req, res) => {
   }
 });
 
+app.post(`${apiUrl}/logout`, authenticateToken, async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader.split(' ')[1];
+    const result = await invalidateToken(token, req.user.email);
+    res.json(result);
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ error: "Failed to logout" });
+  }
+});
+
 // Protected route
 app.get(`${apiUrl}/users`, authenticateToken, async (req, res) => {
   try {
@@ -76,7 +88,7 @@ app.get(`${apiUrl}/users`, authenticateToken, async (req, res) => {
 // Admin-only: Get all user details (including passwords for admin view)
 app.get(`${apiUrl}/admin/users`, authenticateToken, async (req, res) => {
   if (req.user.role !== "admin")
-    return res.status(401).json({ error: "Not authorised" });
+    return res.status(403).json({ error: "Not authorised" });
   try {
     const [rows] = await pool.execute("SELECT * FROM users");
     res.json(rows);
@@ -92,7 +104,7 @@ app.delete(
   authenticateToken,
   async (req, res) => {
     if (req.user.role !== "admin")
-      return res.status(401).json({ error: "Not authorised" });
+      return res.status(403).json({ error: "Not authorised" });
     try {
       const { userId } = req.params;
       const [result] = await pool.execute("DELETE FROM users WHERE id = ?", [
@@ -117,7 +129,7 @@ app.put(
   authenticateToken,
   async (req, res) => {
     if (req.user.role !== "admin")
-      return res.status(401).json({ error: "Not authorised" });
+      return res.status(403).json({ error: "Not authorised" });
     try {
       const { userId } = req.params;
       const { points } = req.body;
