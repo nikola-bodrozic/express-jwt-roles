@@ -16,33 +16,24 @@ let poolStub;
 
 // Mock tokens for different roles
 const mockDeveloper = { id: 1, username: 'devuser', email: 'dev@example.com', role: 'developer' };
-const mockQaTester = { id: 2, username: 'qatester', email: 'qa@example.com', role: 'qatester' };
-const mockAdmin = { id: 3, username: 'adminuser', email: 'admin@example.com', role: 'admin' };
+const mockQaTester  = { id: 2, username: 'qatester', email: 'qa@example.com', role: 'qatester' };
+const mockAdmin     = { id: 3, username: 'adminuser', email: 'admin@example.com', role: 'admin' };
 
 const mockDeveloperToken = jwt.sign(mockDeveloper, JWT_SECRET, { expiresIn: '24h' });
-const mockQaToken = jwt.sign(mockQaTester, JWT_SECRET, { expiresIn: '24h' });
-const mockAdminToken = jwt.sign(mockAdmin, JWT_SECRET, { expiresIn: '24h' });
+const mockQaToken        = jwt.sign(mockQaTester,  JWT_SECRET, { expiresIn: '24h' });
+const mockAdminToken     = jwt.sign(mockAdmin,     JWT_SECRET, { expiresIn: '24h' });
 
 describe('Integration Tests', () => {
   beforeEach(() => {
-    // Stub pool.execute if not already stubbed
-    if (!pool.execute.restore) {
-      poolStub = sinon.stub(pool, 'execute');
-    } else {
-      poolStub = pool.execute;
-      poolStub.resetHistory();
-    }
+    // Fresh stub per test — no branch, no resetHistory.
+    poolStub = sinon.stub(pool, 'execute');
 
-    // Default behavior: token is NOT blacklisted
-    poolStub.callsFake(async (sql, params) => {
-      if (sql.includes('sw_tokens') && sql.includes('SELECT')) {
-        return [[]]; // Not blacklisted
-      }
-      return [[]]; // Default empty for other unexpected queries
-    });
+    // Default: blacklist check returns "not invalidated", everything else empty.
+    // Individual tests override with poolStub.withArgs(...).resolves(...).
+    poolStub.callsFake(async () => [[]]);
   });
 
-  after(() => {
+  afterEach(() => {
     sinon.restore();
   });
 
